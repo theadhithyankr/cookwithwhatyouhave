@@ -21,6 +21,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { useRouter } from 'next/navigation';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
 
 export default function Home() {
   const [ingredients, setIngredients] = useState<
@@ -333,7 +334,7 @@ export default function Home() {
         </Card>
       )}
 
-      {nutrientAnalysis && (
+      {recipe && nutrientAnalysis && (
         <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="text-2xl">Nutrient Analysis</CardTitle>
@@ -436,6 +437,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
+            <Button onClick={handleAnalyzeNutrients} className="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md shadow-md">Analyze Nutrients</Button>
           </CardContent>
         </Card>
       )}
