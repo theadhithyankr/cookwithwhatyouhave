@@ -396,25 +396,7 @@ export default function Home() {
               </div>
             </div>
             <div className="mt-4">
-              <h3 className="text-xl font-semibold">Macronutrient Ratios:</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <Label>Protein</Label>
-                  <Progress value={parseFloat(nutrientAnalysis.recipeAnalysis.macronutrients.find(m => m.name === 'Protein')?.amount || '0')} />
-                </div>
-                <div>
-                  <Label>Fiber</Label>
-                  <Progress value={parseFloat(nutrientAnalysis.recipeAnalysis.macronutrients.find(m => m.name === 'Fiber')?.amount || '0')} />
-                </div>
-                <div>
-                  <Label>Carbohydrates</Label>
-                  <Progress value={parseFloat(nutrientAnalysis.recipeAnalysis.macronutrients.find(m => m.name === 'Carbohydrates')?.amount || '0')} />
-                </div>
-                <div>
-                  <Label>Fat</Label>
-                  <Progress value={parseFloat(nutrientAnalysis.recipeAnalysis.macronutrients.find(m => m.name === 'Fat')?.amount || '0')} />
-                </div>
-              </div>
+
             </div>
             <div className="mt-4">
               <h3 className="text-xl font-semibold">Ingredient Analyses:</h3>
@@ -447,3 +429,4 @@ export default function Home() {
     </div>
   );
 }
+
