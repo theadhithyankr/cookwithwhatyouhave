@@ -280,6 +280,7 @@ export default function Home() {
                     variant="destructive"
                     size="icon"
                     onClick={() => removeIngredient(index)}
+                    className="transition-transform hover:scale-110" // Added hover animation
                   >
                     <MinusCircle className="h-4 w-4" />
                   </Button>
@@ -308,11 +309,11 @@ export default function Home() {
                 </div>
               </div>
             ))}
-            <Button type="button" onClick={addIngredient} className="bg-green-500 hover:bg-green-700 text-white font-bold rounded-md shadow-md">
+            <Button type="button" onClick={addIngredient} className="transition-transform hover:scale-105 bg-green-500 hover:bg-green-700 text-white font-bold rounded-md shadow-md">
               <PlusCircle className="h-4 w-4 mr-2" />
               Add Ingredient
             </Button>
-            <Button onClick={handleGenerateRecipe} className="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md shadow-md">Generate Recipe</Button>
+            <Button onClick={handleGenerateRecipe} className="transition-transform hover:scale-105 bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md shadow-md">Generate Recipe</Button>
           </div>
         </CardContent>
       </Card>
@@ -348,7 +349,7 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-              <Button onClick={handleAnalyzeNutrients} className="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md shadow-md">Analyze Nutrients</Button>
+              <Button onClick={handleAnalyzeNutrients} className="transition-transform hover:scale-105 bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md shadow-md">Analyze Nutrients</Button>
             </div>
           </CardContent>
         </Card>
