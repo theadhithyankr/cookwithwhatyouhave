@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
@@ -11,20 +11,13 @@ import {Label} from '@/components/ui/label';
 import {Slider} from '@/components/ui/slider';
 import {PlusCircle, MinusCircle} from 'lucide-react';
 import {Progress} from '@/components/ui/progress';
-import {
-  Toast,
-  ToastClose,
-  ToastDescription,
-  ToastProvider,
-  ToastTitle,
-  ToastViewport,
-} from '@/components/ui/toast';
 import {useToast} from '@/hooks/use-toast';
+import {Toaster} from '@/components/ui/toaster';
 
 export default function Home() {
   const [ingredients, setIngredients] = useState<
-    {name: string; quantity: string; protein: number; fiber: number}[]
-  >([{name: '', quantity: '', protein: 50, fiber: 50}]);
+    {name: string; quantity: string; protein: number; fiber: number; image: string}[]
+  >([{name: '', quantity: '', protein: 50, fiber: 50, image: ''}]);
   const [recipe, setRecipe] = useState<{
     recipeName: string;
     ingredients: string[];
@@ -34,8 +27,7 @@ export default function Home() {
     ingredientAnalyses: any[];
     recipeAnalysis: any;
   } | null>(null);
-  const [ingredientQuantities, setIngredientQuantities] = useState<{[key: string]: string}>({});
-
+  const [ingredientImages, setIngredientImages] = useState<{[key: string]: string}>({});
   const {toast} = useToast();
 
   const handleGenerateRecipe = async () => {
@@ -102,18 +94,19 @@ export default function Home() {
     }
   };
 
-  const handleQuantityChange = (ingredientName: string, quantity: string) => {
-    setIngredients(prevIngredients =>
-      prevIngredients.map(ing =>
-        ing.name === ingredientName ? {...ing, quantity: quantity} : ing
-      )
-    );
+  const handleQuantityChange = (index: number, quantity: string) => {
+    setIngredients(prevIngredients => {
+      const updatedIngredients = [...prevIngredients];
+      updatedIngredients[index].quantity = quantity;
+      return updatedIngredients;
+    });
   };
 
-  const handleIngredientNameChange = (index: number, name: string) => {
+  const handleIngredientNameChange = async (index: number, name: string) => {
     const updatedIngredients = [...ingredients];
     updatedIngredients[index].name = name;
     setIngredients(updatedIngredients);
+    fetchImage(name, index);
   };
 
   const handleProteinChange = (index: number, protein: number) => {
@@ -129,7 +122,7 @@ export default function Home() {
   };
 
   const addIngredient = () => {
-    setIngredients([...ingredients, {name: '', quantity: '', protein: 50, fiber: 50}]);
+    setIngredients([...ingredients, {name: '', quantity: '', protein: 50, fiber: 50, image: ''}]);
   };
 
   const removeIngredient = (index: number) => {
@@ -138,76 +131,118 @@ export default function Home() {
     setIngredients(updatedIngredients);
   };
 
+  const fetchImage = async (name: string, index: number) => {
+    try {
+      const response = await fetch(`https://picsum.photos/200/200?text=${name}`);
+      const imageUrl = response.url;
+
+      setIngredients(prevIngredients => {
+        const updatedIngredients = [...prevIngredients];
+        updatedIngredients[index].image = imageUrl;
+        return updatedIngredients;
+      });
+
+    } catch (error) {
+      console.error('Failed to fetch image:', error);
+      setIngredients(prevIngredients => {
+        const updatedIngredients = [...prevIngredients];
+        updatedIngredients[index].image = '';
+        return updatedIngredients;
+      });
+    }
+  };
+
   return (
-    <div className="container mx-auto p-4 flex flex-col gap-4">
-      <Card>
+    <div className="container mx-auto p-6 flex flex-col gap-6">
+      <Card className="shadow-md">
         <CardHeader>
-          <CardTitle>Enter Ingredients</CardTitle>
-          <CardDescription>
-            Specify the ingredients you have, along with their nutrient levels.
-          </CardDescription>
+          <CardTitle className="text-2xl">Recipe Generator</CardTitle>
+          <CardDescription>Add ingredients to generate a recipe and analyze its nutrients.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
             {ingredients.map((ingredient, index) => (
-              <div key={index} className="flex flex-col gap-2 border p-4 rounded-md">
+              <div key={index} className="flex flex-col gap-4 border p-4 rounded-md">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor={`ingredient-name-${index}`}>Ingredient Name</Label>
+                  <Label htmlFor={`ingredient-name-${index}`} className="text-lg font-semibold">Ingredient Name</Label>
                   <Button
                     type="button"
                     variant="destructive"
                     size="icon"
                     onClick={() => removeIngredient(index)}
                   >
-                    <MinusCircle className="h-4 w-4"
-/>
+                    <MinusCircle className="h-4 w-4" />
                   </Button>
                 </div>
-                <Input
-                  id={`ingredient-name-${index}`}
-                  value={ingredient.name}
-                  onChange={e => handleIngredientNameChange(index, e.target.value)}
-                  placeholder="e.g., chicken"
-                />
-                <Label htmlFor={`ingredient-quantity-${index}`}>Quantity</Label>
-                <Input
-                  type="text"
-                  id={`ingredient-quantity-${index}`}
-                  placeholder="e.g., 100g, 2 cups"
-                  value={ingredient.quantity}
-                  onChange={e => handleQuantityChange(ingredient.name, e.target.value)}
-                />
-                <Label htmlFor={`protein-level-${index}`}>Protein Level</Label>
-                <Slider
-                  id={`protein-level-${index}`}
-                  defaultValue={[ingredient.protein]}
-                  max={100}
-                  step={1}
-                  onValueChange={value => handleProteinChange(index, value[0])}
-                />
-                <Label htmlFor={`fiber-level-${index}`}>Fiber Level</Label>
-                <Slider
-                  id={`fiber-level-${index}`}
-                  defaultValue={[ingredient.fiber]}
-                  max={100}
-                  step={1}
-                  onValueChange={value => handleFiberChange(index, value[0])}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col">
+                    <Input
+                      id={`ingredient-name-${index}`}
+                      value={ingredient.name}
+                      onChange={e => handleIngredientNameChange(index, e.target.value)}
+                      placeholder="e.g., chicken"
+                      className="rounded-md shadow-sm"
+                    />
+                    {ingredient.image && (
+                      <img
+                        src={ingredient.image}
+                        alt={ingredient.name}
+                        className="mt-2 rounded-md object-cover w-full h-32"
+                      />
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <Label htmlFor={`ingredient-quantity-${index}`}>Quantity</Label>
+                    <Input
+                      type="text"
+                      id={`ingredient-quantity-${index}`}
+                      placeholder="e.g., 100g, 2 cups"
+                      value={ingredient.quantity}
+                      onChange={e => handleQuantityChange(index, e.target.value)}
+                      className="rounded-md shadow-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor={`protein-${index}`}>Protein Level</Label>
+                    <Slider
+                      id={`protein-${index}`}
+                      defaultValue={[ingredient.protein]}
+                      max={100}
+                      step={1}
+                      onValueChange={value => handleProteinChange(index, value[0])}
+                    />
+                    <p className="text-sm text-muted-foreground mt-1">Protein: {ingredient.protein}</p>
+                  </div>
+                  <div>
+                    <Label htmlFor={`fiber-${index}`}>Fiber Level</Label>
+                    <Slider
+                      id={`fiber-${index}`}
+                      defaultValue={[ingredient.fiber]}
+                      max={100}
+                      step={1}
+                      onValueChange={value => handleFiberChange(index, value[0])}
+                    />
+                    <p className="text-sm text-muted-foreground mt-1">Fiber: {ingredient.fiber}</p>
+                  </div>
+                </div>
               </div>
             ))}
-            <Button type="button" onClick={addIngredient}>
+            <Button type="button" onClick={addIngredient} className="bg-green-500 hover:bg-green-700 text-white font-bold rounded-md shadow-md">
               <PlusCircle className="h-4 w-4 mr-2" />
               Add Ingredient
             </Button>
-            <Button onClick={handleGenerateRecipe}>Generate Recipe</Button>
+            <Button onClick={handleGenerateRecipe} className="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md shadow-md">Generate Recipe</Button>
           </div>
         </CardContent>
       </Card>
 
       {recipe && (
-        <Card>
+        <Card className="shadow-md">
           <CardHeader>
-            <CardTitle>{recipe.recipeName}</CardTitle>
+            <CardTitle className="text-2xl">{recipe.recipeName}</CardTitle>
             <CardDescription>Here's a recipe based on your ingredients:</CardDescription>
           </CardHeader>
           <CardContent>
@@ -218,37 +253,24 @@ export default function Home() {
                   {recipe.ingredients.map(ingredient => (
                     <li key={ingredient} className="flex items-center justify-between">
                       {ingredient}
-                      <div className="flex items-center space-x-2">
-                        <Label htmlFor={`quantity-${ingredient}`} className="text-sm">
-                          Quantity:
-                        </Label>
-                        <Input
-                          type="text"
-                          id={`quantity-${ingredient}`}
-                          placeholder="e.g., 100g, 2 cups"
-                          className="w-32 text-sm"
-                          value={ingredientQuantities[ingredient] || ''}
-                          onChange={e => handleQuantityChange(ingredient, e.target.value)}
-                        />
-                      </div>
                     </li>
                   ))}
                 </ul>
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Instructions:</h3>
-                <Textarea readOnly value={recipe.instructions} className="min-h-[100px]" />
+                <Textarea readOnly value={recipe.instructions} className="min-h-[100px] rounded-md shadow-sm" />
               </div>
-              <Button onClick={handleAnalyzeNutrients}>Analyze Nutrients</Button>
+              <Button onClick={handleAnalyzeNutrients} className="bg-purple-500 hover:bg-purple-700 text-white font-bold rounded-md shadow-md">Analyze Nutrients</Button>
             </div>
           </CardContent>
         </Card>
       )}
 
       {nutrientAnalysis && (
-        <Card>
+        <Card className="shadow-md">
           <CardHeader>
-            <CardTitle>Nutrient Analysis</CardTitle>
+            <CardTitle className="text-2xl">Nutrient Analysis</CardTitle>
             <CardDescription>Here's the nutrient breakdown of your recipe:</CardDescription>
           </CardHeader>
           <CardContent>
@@ -366,28 +388,3 @@ function NutrientBar({label, value, unit}: {label: string; value: number; unit: 
     </div>
   );
 }
-
-
-export function Toaster() {
-  const {toasts} = useToast();
-
-  return (
-    <ToastProvider>
-      {toasts.map(function ({id, title, description, action, ...props}) {
-        return (
-          <Toast key={id} {...props}>
-            <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
-              {description && <ToastDescription>{description}</ToastDescription>}
-            </div>
-            {action}
-            <ToastClose />
-          </Toast>
-        );
-      })}
-      <ToastViewport />
-    </ToastProvider>
-  );
-}
-
-
