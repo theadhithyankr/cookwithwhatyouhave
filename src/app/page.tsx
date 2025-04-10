@@ -346,8 +346,8 @@ export default function Home() {
                 <PlusCircle className="h-6 w-6" />
               </Button>
             </div>
-            <Button onClick={handleGenerateRecipe} className="transition-transform hover:scale-105 bg-yellow-500 hover:bg-yellow-700 text-black font-bold rounded-md shadow-md">Generate Recipe</Button>
-            <Button onClick={handleAnalyzeNutrients} className="transition-transform hover:scale-105 bg-yellow-500 hover:bg-yellow-700 text-black font-bold rounded-md shadow-md">Analyze Nutrients</Button>
+            <Button className="bg-gradient-to-r from-yellow-500 to-yellow-700 hover:from-yellow-700 hover:to-yellow-500 text-white font-bold rounded-md shadow-md transition-transform hover:scale-105" onClick={handleGenerateRecipe}>Generate Recipe</Button>
+            <Button className="bg-gradient-to-r from-yellow-500 to-yellow-700 hover:from-yellow-700 hover:to-yellow-500 text-white font-bold rounded-md shadow-md transition-transform hover:scale-105" onClick={handleAnalyzeNutrients}>Analyze Nutrients</Button>
           </div>
         </CardContent>
       </Card>
