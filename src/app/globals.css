@@ -18,15 +18,15 @@ body {
     --card-foreground: 240 10% 10%; /* Dark Gray */
     --border: 240 10% 88%;    /* Light Gray */
     --input: 240 10% 88%;     /* Light Gray */
-    --primary: 140 80% 40%;   /* Green */
-    --primary-foreground: 240 10% 100%; /* White */
-    --secondary: 140 20% 92%; /* Light Green */
+    --primary: 60 90% 50%;   /* Yellow */
+    --primary-foreground: 240 10% 10%; /* Dark Gray */
+    --secondary: 60 20% 92%; /* Light Yellow */
     --secondary-foreground: 240 10% 10%; /* Dark Gray */
     --accent: 60 90% 50%;      /* Yellow */
     --accent-foreground: 240 10% 10%; /* Dark Gray */
     --destructive: 0 70% 50%;  /* Red */
     --destructive-foreground: 240 10% 100%; /* White */
-    --ring: 140 80% 40%;      /* Green */
+    --ring: 60 90% 50%;      /* Yellow */
     --radius: 0.5rem;
   }
 
@@ -41,15 +41,15 @@ body {
     --card-foreground: 240 10% 98%; /* Light Gray */
     --border: 240 10% 28%;    /* Dark Gray */
     --input: 240 10% 28%;     /* Dark Gray */
-    --primary: 140 80% 60%;   /* Light Green */
+    --primary: 60 90% 60%;   /* Light Yellow */
     --primary-foreground: 240 10% 10%; /* Dark Gray */
-    --secondary: 140 20% 22%; /* Dark Green */
+    --secondary: 60 20% 22%; /* Dark Yellow */
     --secondary-foreground: 240 10% 98%; /* Light Gray */
     --accent: 60 90% 60%;      /* Light Yellow */
     --accent-foreground: 240 10% 10%; /* Dark Gray */
     --destructive: 0 70% 60%;  /* Light Red */
     --destructive-foreground: 240 10% 98%; /* Light Gray */
-    --ring: 140 80% 60%;      /* Light Green */
+    --ring: 60 90% 60%;      /* Light Yellow */
     --radius: 0.5rem;
   }
 }
