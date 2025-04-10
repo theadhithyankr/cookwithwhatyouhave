@@ -29,7 +29,7 @@ export default function Home() {
   const [recipe, setRecipe] = useState<GenerateRecipeOutput | null>(null);
   const [nutrientAnalysis, setNutrientAnalysis] = useState<AnalyzeNutrientContentOutput | null>(null);
   const [allergies, setAllergies] = useState('');
-    const [strictMode, setStrictMode] = useState(false); // State for strict mode
+  const [strictMode, setStrictMode] = useState(false); // State for strict mode
   const {toast} = useToast();
   const router = useRouter();
 
@@ -242,7 +242,7 @@ export default function Home() {
               onChange={e => setAllergies(e.target.value)}
               className="rounded-md shadow-sm"
             />
-                        <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
               <Checkbox
                 id="strict-mode"
                 checked={strictMode}
