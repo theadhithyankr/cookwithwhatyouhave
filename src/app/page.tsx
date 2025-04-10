@@ -10,6 +10,16 @@ import {analyzeNutrientContent} from '@/ai/flows/analyze-nutrient-content';
 import {Label} from '@/components/ui/label';
 import {Slider} from '@/components/ui/slider';
 import {PlusCircle, MinusCircle} from 'lucide-react';
+import {Progress} from '@/components/ui/progress';
+import {
+  Toast,
+  ToastClose,
+  ToastDescription,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
+} from '@/components/ui/toast';
+import {useToast} from '@/hooks/use-toast';
 
 export default function Home() {
   const [ingredients, setIngredients] = useState<
@@ -21,27 +31,49 @@ export default function Home() {
     instructions: string;
   } | null>(null);
   const [nutrientAnalysis, setNutrientAnalysis] = useState<{
-    ingredientAnalyses: any[]; // Replace 'any' with a more specific type if possible
-    recipeAnalysis: any; // Replace 'any' with a more specific type if possible
+    ingredientAnalyses: any[];
+    recipeAnalysis: any;
   } | null>(null);
   const [ingredientQuantities, setIngredientQuantities] = useState<{[key: string]: string}>({});
 
+  const {toast} = useToast();
+
   const handleGenerateRecipe = async () => {
-    if (!ingredients.length) return;
+    if (!ingredients.length) {
+      toast({
+        title: 'No ingredients added',
+        description: 'Please add ingredients to generate a recipe.',
+      });
+      return;
+    }
 
     const ingredientNames = ingredients.map(item => item.name).join(',');
     try {
       const generatedRecipe = await generateRecipe({ingredients: ingredientNames});
       setRecipe(generatedRecipe);
+      toast({
+        title: 'Recipe generated',
+        description: 'A recipe has been generated based on your ingredients.',
+      });
     } catch (error) {
       console.error('Error generating recipe:', error);
+      toast({
+        title: 'Error generating recipe',
+        description: 'Failed to generate a recipe. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
   const handleAnalyzeNutrients = async () => {
-    if (!recipe) return;
+    if (!recipe) {
+      toast({
+        title: 'No recipe generated',
+        description: 'Please generate a recipe first.',
+      });
+      return;
+    }
 
-    // Format ingredients with quantities for nutrient analysis
     const formattedIngredients = recipe.ingredients.map(ingredient => {
       const foundIngredient = ingredients.find(ing => ing.name === ingredient);
       return {
@@ -56,8 +88,17 @@ export default function Home() {
         ingredients: formattedIngredients,
       });
       setNutrientAnalysis(analysis);
+      toast({
+        title: 'Nutrient analysis complete',
+        description: 'The nutrient analysis for the recipe has been calculated.',
+      });
     } catch (error) {
       console.error('Error analyzing nutrients:', error);
+      toast({
+        title: 'Error analyzing nutrients',
+        description: 'Failed to analyze nutrients. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -118,7 +159,8 @@ export default function Home() {
                     size="icon"
                     onClick={() => removeIngredient(index)}
                   >
-                    <MinusCircle className="h-4 w-4" />
+                    <MinusCircle className="h-4 w-4"
+/>
                   </Button>
                 </div>
                 <Input
@@ -207,9 +249,7 @@ export default function Home() {
         <Card>
           <CardHeader>
             <CardTitle>Nutrient Analysis</CardTitle>
-            <CardDescription>
-              Here's the nutrient breakdown of your recipe:
-            </CardDescription>
+            <CardDescription>Here's the nutrient breakdown of your recipe:</CardDescription>
           </CardHeader>
           <CardContent>
             <div>
@@ -260,6 +300,49 @@ export default function Home() {
                 </div>
               ))}
             </div>
+            {nutrientAnalysis && nutrientAnalysis.recipeAnalysis && (
+              <div className="mt-4">
+                <h3 className="text-xl font-semibold">Nutrient Scale:</h3>
+                <div className="grid gap-2">
+                  <NutrientBar
+                    label="Protein"
+                    value={parseFloat(
+                      nutrientAnalysis.recipeAnalysis.macronutrients.find(
+                        nutrient => nutrient.name === 'Protein'
+                      )?.amount || '0'
+                    )}
+                    unit="g"
+                  />
+                  <NutrientBar
+                    label="Fiber"
+                    value={parseFloat(
+                      nutrientAnalysis.recipeAnalysis.micronutrients.find(
+                        nutrient => nutrient.name === 'Fiber'
+                      )?.amount || '0'
+                    )}
+                    unit="g"
+                  />
+                  <NutrientBar
+                    label="Carbs"
+                    value={parseFloat(
+                      nutrientAnalysis.recipeAnalysis.macronutrients.find(
+                        nutrient => nutrient.name === 'Carbohydrates'
+                      )?.amount || '0'
+                    )}
+                    unit="g"
+                  />
+                  <NutrientBar
+                    label="Fat"
+                    value={parseFloat(
+                      nutrientAnalysis.recipeAnalysis.macronutrients.find(
+                        nutrient => nutrient.name === 'Fat'
+                      )?.amount || '0'
+                    )}
+                    unit="g"
+                  />
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -268,36 +351,43 @@ export default function Home() {
   );
 }
 
-import {
-  Toast,
-  ToastClose,
-  ToastDescription,
-  ToastProvider,
-  ToastTitle,
-  ToastViewport,
-} from "@/components/ui/toast"
-import { useToast } from "@/hooks/use-toast"
+function NutrientBar({label, value, unit}: {label: string; value: number; unit: string}) {
+  const percentage = Math.min(value, 100); // Cap at 100% for display purposes
+  return (
+    <div className="flex flex-col space-y-1">
+      <div className="flex justify-between">
+        <Label>{label}</Label>
+        <span>
+          {value}
+          {unit}
+        </span>
+      </div>
+      <Progress value={percentage} />
+    </div>
+  );
+}
+
 
 export function Toaster() {
-  const { toasts } = useToast()
+  const {toasts} = useToast();
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
+      {toasts.map(function ({id, title, description, action, ...props}) {
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">
               {title && <ToastTitle>{title}</ToastTitle>}
-              {description && (
-                <ToastDescription>{description}</ToastDescription>
-              )}
+              {description && <ToastDescription>{description}</ToastDescription>}
             </div>
             {action}
             <ToastClose />
           </Toast>
-        )
+        );
       })}
       <ToastViewport />
     </ToastProvider>
-  )
+  );
 }
+
+
