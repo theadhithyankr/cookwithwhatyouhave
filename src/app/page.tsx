@@ -5,7 +5,7 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
 import {generateRecipe, GenerateRecipeOutput} from '@/ai/flows/generate-recipe';
-import {analyzeNutrientContent} from '@/ai/flows/analyze-nutrient-content';
+import {analyzeNutrientContent, AnalyzeNutrientContentOutput} from '@/ai/flows/analyze-nutrient-content';
 import {Label} from '@/components/ui/label';
 import {PlusCircle, MinusCircle} from 'lucide-react';
 import {useToast} from '@/hooks/use-toast';
@@ -14,28 +14,18 @@ import {useEffect} from 'react';
 import {Checkbox} from '@/components/ui/checkbox';
 import {Separator} from '@/components/ui/separator';
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion"
+import {useRouter} from 'next/navigation';
+import {Progress} from "@/components/ui/progress"
 
 export default function Home() {
   const [ingredients, setIngredients] = useState<
-    {name: string; quantity: string; image: string}[]
-  >([{name: '', quantity: '', image: ''}]);
+    {name: string; quantity: string}[]
+  >([{name: '', quantity: ''}]);
   const [recipe, setRecipe] = useState<GenerateRecipeOutput | null>(null);
-  const [nutrientAnalysis, setNutrientAnalysis] = useState<{
-    ingredientAnalyses: any[];
-    recipeAnalysis: any;
-  } | null>(null);
+  const [nutrientAnalysis, setNutrientAnalysis] = useState<AnalyzeNutrientContentOutput | null>(null);
   const [allergies, setAllergies] = useState('');
   const {toast} = useToast();
-  const [imageUrls, setImageUrls] = useState<{[key: string]: string}>({});
-
-  useEffect(() => {
-    // Fetch images for initial ingredients
-    ingredients.forEach((ingredient, index) => {
-      if (ingredient.name) {
-        fetchImage(ingredient.name, index);
-      }
-    });
-  }, [ingredients]);
+  const router = useRouter();
 
   const handleGenerateRecipe = async () => {
     if (!ingredients.length) {
@@ -110,14 +100,15 @@ export default function Home() {
   };
 
   const handleIngredientNameChange = (index: number, name: string) => {
-    const updatedIngredients = [...ingredients];
-    updatedIngredients[index].name = name;
-    setIngredients(updatedIngredients);
-    fetchImage(name, index);
+    setIngredients(prevIngredients => {
+      const updatedIngredients = [...prevIngredients];
+      updatedIngredients[index].name = name;
+      return updatedIngredients;
+    });
   };
 
   const addIngredient = () => {
-    setIngredients([...ingredients, {name: '', quantity: '', image: ''}]);
+    setIngredients([...ingredients, {name: '', quantity: ''}]);
   };
 
   const removeIngredient = (index: number) => {
@@ -126,38 +117,30 @@ export default function Home() {
     setIngredients(updatedIngredients);
   };
 
-  const fetchImage = async (name: string, index: number) => {
-    try {
-      const response = await fetch(`https://picsum.photos/200/200?text=${name}`);
-      const imageUrl = response.url;
-
-      setImageUrls(prevImageUrls => ({
-        ...prevImageUrls,
-        [index]: imageUrl,
-      }));
-
-      setIngredients(prevIngredients => {
-        const updatedIngredients = [...prevIngredients];
-        updatedIngredients[index].image = imageUrl;
-        return updatedIngredients;
-      });
-
-    } catch (error) {
-      console.error('Failed to fetch image:', error);
-      toast({
-        title: 'Error fetching image',
-        description: `Failed to fetch image for ${name}.`,
-        variant: 'destructive',
-      });
-    }
-  };
-
   const RecipeStep = ({step, timer}: {step: string; timer?: string}) => {
     const [completed, setCompleted] = useState(false);
+    const [timeLeft, setTimeLeft] = useState(timer ? parseInt(timer) : 0);
+    const [isRunning, setIsRunning] = useState(false);
+
+    useEffect(() => {
+      if (isRunning && timeLeft > 0) {
+        const intervalId = setInterval(() => {
+          setTimeLeft(timeLeft - 1);
+        }, 1000);
+        return () => clearInterval(intervalId);
+      } else if (timeLeft === 0) {
+        setIsRunning(false);
+      }
+    }, [isRunning, timeLeft]);
+
+    const toggleTimer = () => {
+      setIsRunning(!isRunning);
+    };
+
     return (
       <div className="flex items-center justify-between py-2">
         <label className="flex items-center space-x-2">
-          <Checkbox checked={completed} onCheckedChange={setCompleted} />
+          <Checkbox checked={completed} onCheckedChange={() => setCompleted(!completed)} />
           <span>{step}</span>
         </label>
         {timer && (
@@ -177,11 +160,24 @@ export default function Home() {
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
-            {timer}
+            {isRunning ? `Running: ${timeLeft}s` : `Set time: ${timer}s`}
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={toggleTimer}
+              disabled={completed}
+            >
+              {isRunning ? 'Pause' : 'Start'}
+            </Button>
           </span>
         )}
       </div>
     );
+  };
+
+  const handleAlternateRecipeClick = (recipeName: string) => {
+    // Reload the page with the selected recipe
+    router.push(`/?recipe=${recipeName}`);
   };
 
   return (
@@ -225,13 +221,6 @@ export default function Home() {
                       placeholder="e.g., chicken"
                       className="rounded-md shadow-sm"
                     />
-                    {imageUrls[index] && (
-                      <img
-                        src={imageUrls[index]}
-                        alt={ingredient.name}
-                        className="mt-2 rounded-md object-cover w-full h-32"
-                      />
-                    )}
                   </div>
                   <div className="flex flex-col">
                     <Label htmlFor={`ingredient-quantity-${index}`}>Quantity</Label>
@@ -293,7 +282,7 @@ export default function Home() {
                 <Accordion type="single" collapsible>
                   {recipe.alternateRecipes.map((altRecipe, index) => (
                     <AccordionItem key={index} value={`recipe-${index}`}>
-                      <AccordionTrigger>{altRecipe.name}</AccordionTrigger>
+                      <AccordionTrigger onClick={() => handleAlternateRecipeClick(altRecipe.name)}>{altRecipe.name}</AccordionTrigger>
                       <AccordionContent>{altRecipe.description}</AccordionContent>
                     </AccordionItem>
                   ))}
@@ -335,7 +324,27 @@ export default function Home() {
                 Healthiness Assessment: {nutrientAnalysis.recipeAnalysis.healthinessAssessment}
               </p>
             </div>
-
+            <div className="mt-4">
+              <h3 className="text-xl font-semibold">Macronutrient Ratios:</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <Label>Protein</Label>
+                  <Progress value={parseFloat(nutrientAnalysis.recipeAnalysis.macronutrients.find(m => m.name === 'Protein')?.amount || '0')} />
+                </div>
+                <div>
+                  <Label>Fiber</Label>
+                  <Progress value={parseFloat(nutrientAnalysis.recipeAnalysis.macronutrients.find(m => m.name === 'Fiber')?.amount || '0')} />
+                </div>
+                <div>
+                  <Label>Carbohydrates</Label>
+                  <Progress value={parseFloat(nutrientAnalysis.recipeAnalysis.macronutrients.find(m => m.name === 'Carbohydrates')?.amount || '0')} />
+                </div>
+                <div>
+                  <Label>Fat</Label>
+                  <Progress value={parseFloat(nutrientAnalysis.recipeAnalysis.macronutrients.find(m => m.name === 'Fat')?.amount || '0')} />
+                </div>
+              </div>
+            </div>
             <div className="mt-4">
               <h3 className="text-xl font-semibold">Ingredient Analyses:</h3>
               {nutrientAnalysis.ingredientAnalyses.map((ingredient, index) => (
