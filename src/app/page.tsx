@@ -51,6 +51,7 @@ export default function Home() {
         strictMode: strictMode, // Pass strictMode to the generateRecipe function
       });
       setRecipe(generatedRecipe);
+      setNutrientAnalysis(null); // Reset nutrient analysis when generating a new recipe
       toast({
         title: 'Recipe generated',
         description: 'A recipe has been generated based on your ingredients.',
@@ -102,6 +103,7 @@ export default function Home() {
     }
   };
 
+
   const handleQuantityChange = (index: number, quantity: string) => {
     setIngredients(prevIngredients => {
       const updatedIngredients = [...prevIngredients];
@@ -130,19 +132,19 @@ export default function Home() {
 
   const RecipeStep = ({step, timer}: {step: string; timer?: string}) => {
     const [completed, setCompleted] = useState(false);
-        const [hours, setHours] = useState(0);
+    const [hours, setHours] = useState(0);
     const [minutes, setMinutes] = useState(0);
     const [seconds, setSeconds] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
 
-        useEffect(() => {
-            if (timer) {
-                const timeParts = timer.split(':');
-                setHours(parseInt(timeParts[0]) || 0);
-                setMinutes(parseInt(timeParts[1]) || 0);
-                setSeconds(parseInt(timeParts[2]) || 0);
-            }
-        }, [timer]);
+    useEffect(() => {
+      if (timer) {
+        const timeParts = timer.split(':');
+        setHours(parseInt(timeParts[0]) || 0);
+        setMinutes(parseInt(timeParts[1]) || 0);
+        setSeconds(parseInt(timeParts[2]) || 0);
+      }
+    }, [timer]);
 
     useEffect(() => {
       let totalSeconds = hours * 3600 + minutes * 60 + seconds;
@@ -329,12 +331,13 @@ export default function Home() {
                   ))}
                 </div>
               </div>
+              <Button onClick={handleAnalyzeNutrients} className="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md shadow-md">Analyze Nutrients</Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {recipe && nutrientAnalysis && (
+      {nutrientAnalysis && (
         <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="text-2xl">Nutrient Analysis</CardTitle>
@@ -437,7 +440,6 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <Button onClick={handleAnalyzeNutrients} className="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md shadow-md">Analyze Nutrients</Button>
           </CardContent>
         </Card>
       )}
