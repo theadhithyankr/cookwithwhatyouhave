@@ -22,11 +22,12 @@ import {
 } from "@/components/ui/accordion"
 import { useRouter } from 'next/navigation';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Home() {
   const [ingredients, setIngredients] = useState<
-    {name: string; quantity: string}[]
-  >([{name: '', quantity: ''}]);
+    {name: string; quantity: string; unit: string}[]
+  >([{name: '', quantity: '', unit: 'gram'}]);
   const [recipe, setRecipe] = useState<GenerateRecipeOutput | null>(null);
   const [nutrientAnalysis, setNutrientAnalysis] = useState<AnalyzeNutrientContentOutput | null>(null);
   const [allergies, setAllergies] = useState('');
@@ -43,7 +44,7 @@ export default function Home() {
       return;
     }
 
-    const ingredientNames = ingredients.map(item => item.name).join(',');
+    const ingredientNames = ingredients.map(item => `${item.name} ${item.quantity} ${item.unit}`).join(',');
     try {
       const generatedRecipe = await generateRecipe({
         ingredients: ingredientNames,
@@ -79,7 +80,8 @@ export default function Home() {
       const foundIngredient = ingredients.find(ing => ing.name === ingredient);
       return {
         name: ingredient,
-        quantity: foundIngredient?.quantity || '1 serving', // Default quantity
+        quantity: foundIngredient?.quantity || '1', // Default quantity
+        unit: foundIngredient?.unit || 'unit', // Default unit
       };
     });
 
@@ -112,6 +114,14 @@ export default function Home() {
     });
   };
 
+  const handleUnitChange = (index: number, unit: string) => {
+    setIngredients(prevIngredients => {
+      const updatedIngredients = [...prevIngredients];
+      updatedIngredients[index].unit = unit;
+      return updatedIngredients;
+    });
+  };
+
   const handleIngredientNameChange = (index: number, name: string) => {
     setIngredients(prevIngredients => {
       const updatedIngredients = [...prevIngredients];
@@ -121,7 +131,7 @@ export default function Home() {
   };
 
   const addIngredient = () => {
-    setIngredients([...ingredients, {name: '', quantity: ''}]);
+    setIngredients([...ingredients, {name: '', quantity: '', unit: 'gram'}]);
   };
 
   const removeIngredient = (index: number) => {
@@ -285,7 +295,7 @@ export default function Home() {
                     <MinusCircle className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="flex flex-col">
                     <Input
                       id={`ingredient-name-${index}`}
@@ -298,13 +308,30 @@ export default function Home() {
                   <div className="flex flex-col">
                     <Label htmlFor={`ingredient-quantity-${index}`}>Quantity</Label>
                     <Input
-                      type="text"
+                      type="number"
                       id={`ingredient-quantity-${index}`}
-                      placeholder="e.g., 100g, 2 cups"
+                      placeholder="e.g., 100"
                       value={ingredient.quantity}
                       onChange={e => handleQuantityChange(index, e.target.value)}
                       className="rounded-md shadow-sm"
                     />
+                  </div>
+                  <div className="flex flex-col">
+                  <Label htmlFor={`ingredient-unit-${index}`}>Unit</Label>
+                    <Select value={ingredient.unit} onValueChange={(value) => handleUnitChange(index, value)}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gram">Gram (g)</SelectItem>
+                        <SelectItem value="oz">Ounce (oz)</SelectItem>
+                        <SelectItem value="unit">Unit</SelectItem>
+                        <SelectItem value="cup">Cup</SelectItem>
+                        <SelectItem value="tbsp">Tablespoon (tbsp)</SelectItem>
+                        <SelectItem value="tsp">Teaspoon (tsp)</SelectItem>
+                        {/* Add more units as needed */}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
@@ -314,6 +341,7 @@ export default function Home() {
               Add Ingredient
             </Button>
             <Button onClick={handleGenerateRecipe} className="transition-transform hover:scale-105 bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md shadow-md">Generate Recipe</Button>
+            <Button onClick={handleAnalyzeNutrients} className="transition-transform hover:scale-105 bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md shadow-md">Analyze Nutrients</Button>
           </div>
         </CardContent>
       </Card>
@@ -349,7 +377,6 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-              <Button onClick={handleAnalyzeNutrients} className="transition-transform hover:scale-105 bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md shadow-md">Analyze Nutrients</Button>
             </div>
           </CardContent>
         </Card>
@@ -447,3 +474,4 @@ export default function Home() {
     </div>
   );
 }
+
