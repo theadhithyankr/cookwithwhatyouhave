@@ -336,12 +336,18 @@ export default function Home() {
                 </div>
               </div>
             ))}
-            <Button type="button" onClick={addIngredient} className="transition-transform hover:scale-105 bg-green-500 hover:bg-green-700 text-white font-bold rounded-md shadow-md">
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Add Ingredient
-            </Button>
-            <Button onClick={handleGenerateRecipe} className="transition-transform hover:scale-105 bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md shadow-md">Generate Recipe</Button>
-            <Button onClick={handleAnalyzeNutrients} className="transition-transform hover:scale-105 bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md shadow-md">Analyze Nutrients</Button>
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                onClick={addIngredient}
+                className="transition-transform hover:scale-105 bg-yellow-500 hover:bg-yellow-700 text-black font-bold rounded-full shadow-md p-3"
+                aria-label="Add Ingredient"
+              >
+                <PlusCircle className="h-6 w-6" />
+              </Button>
+            </div>
+            <Button onClick={handleGenerateRecipe} className="transition-transform hover:scale-105 bg-yellow-500 hover:bg-yellow-700 text-black font-bold rounded-md shadow-md">Generate Recipe</Button>
+            <Button onClick={handleAnalyzeNutrients} className="transition-transform hover:scale-105 bg-yellow-500 hover:bg-yellow-700 text-black font-bold rounded-md shadow-md">Analyze Nutrients</Button>
           </div>
         </CardContent>
       </Card>
@@ -474,4 +480,3 @@ export default function Home() {
     </div>
   );
 }
-
