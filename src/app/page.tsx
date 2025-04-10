@@ -1,34 +1,41 @@
 'use client';
 
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import {Textarea} from '@/components/ui/textarea';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
-import {generateRecipe} from '@/ai/flows/generate-recipe';
+import {generateRecipe, GenerateRecipeOutput} from '@/ai/flows/generate-recipe';
 import {analyzeNutrientContent} from '@/ai/flows/analyze-nutrient-content';
 import {Label} from '@/components/ui/label';
-import {Slider} from '@/components/ui/slider';
 import {PlusCircle, MinusCircle} from 'lucide-react';
-import {Progress} from '@/components/ui/progress';
 import {useToast} from '@/hooks/use-toast';
 import {Toaster} from '@/components/ui/toaster';
+import {useEffect} from 'react';
+import {Checkbox} from '@/components/ui/checkbox';
+import {Separator} from '@/components/ui/separator';
+import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion"
 
 export default function Home() {
   const [ingredients, setIngredients] = useState<
-    {name: string; quantity: string; protein: number; fiber: number; image: string}[]
-  >([{name: '', quantity: '', protein: 50, fiber: 50, image: ''}]);
-  const [recipe, setRecipe] = useState<{
-    recipeName: string;
-    ingredients: string[];
-    instructions: string;
-  } | null>(null);
+    {name: string; quantity: string; image: string}[]
+  >([{name: '', quantity: '', image: ''}]);
+  const [recipe, setRecipe] = useState<GenerateRecipeOutput | null>(null);
   const [nutrientAnalysis, setNutrientAnalysis] = useState<{
     ingredientAnalyses: any[];
     recipeAnalysis: any;
   } | null>(null);
-  const [ingredientImages, setIngredientImages] = useState<{[key: string]: string}>({});
+  const [allergies, setAllergies] = useState('');
   const {toast} = useToast();
+  const [imageUrls, setImageUrls] = useState<{[key: string]: string}>({});
+
+  useEffect(() => {
+    // Fetch images for initial ingredients
+    ingredients.forEach((ingredient, index) => {
+      if (ingredient.name) {
+        fetchImage(ingredient.name, index);
+      }
+    });
+  }, [ingredients]);
 
   const handleGenerateRecipe = async () => {
     if (!ingredients.length) {
@@ -41,7 +48,7 @@ export default function Home() {
 
     const ingredientNames = ingredients.map(item => item.name).join(',');
     try {
-      const generatedRecipe = await generateRecipe({ingredients: ingredientNames});
+      const generatedRecipe = await generateRecipe({ingredients: ingredientNames, allergies: allergies});
       setRecipe(generatedRecipe);
       toast({
         title: 'Recipe generated',
@@ -102,27 +109,15 @@ export default function Home() {
     });
   };
 
-  const handleIngredientNameChange = async (index: number, name: string) => {
+  const handleIngredientNameChange = (index: number, name: string) => {
     const updatedIngredients = [...ingredients];
     updatedIngredients[index].name = name;
     setIngredients(updatedIngredients);
     fetchImage(name, index);
   };
 
-  const handleProteinChange = (index: number, protein: number) => {
-    const updatedIngredients = [...ingredients];
-    updatedIngredients[index].protein = protein;
-    setIngredients(updatedIngredients);
-  };
-
-  const handleFiberChange = (index: number, fiber: number) => {
-    const updatedIngredients = [...ingredients];
-    updatedIngredients[index].fiber = fiber;
-    setIngredients(updatedIngredients);
-  };
-
   const addIngredient = () => {
-    setIngredients([...ingredients, {name: '', quantity: '', protein: 50, fiber: 50, image: ''}]);
+    setIngredients([...ingredients, {name: '', quantity: '', image: ''}]);
   };
 
   const removeIngredient = (index: number) => {
@@ -136,6 +131,11 @@ export default function Home() {
       const response = await fetch(`https://picsum.photos/200/200?text=${name}`);
       const imageUrl = response.url;
 
+      setImageUrls(prevImageUrls => ({
+        ...prevImageUrls,
+        [index]: imageUrl,
+      }));
+
       setIngredients(prevIngredients => {
         const updatedIngredients = [...prevIngredients];
         updatedIngredients[index].image = imageUrl;
@@ -144,12 +144,44 @@ export default function Home() {
 
     } catch (error) {
       console.error('Failed to fetch image:', error);
-      setIngredients(prevIngredients => {
-        const updatedIngredients = [...prevIngredients];
-        updatedIngredients[index].image = '';
-        return updatedIngredients;
+      toast({
+        title: 'Error fetching image',
+        description: `Failed to fetch image for ${name}.`,
+        variant: 'destructive',
       });
     }
+  };
+
+  const RecipeStep = ({step, timer}: {step: string; timer?: string}) => {
+    const [completed, setCompleted] = useState(false);
+    return (
+      <div className="flex items-center justify-between py-2">
+        <label className="flex items-center space-x-2">
+          <Checkbox checked={completed} onCheckedChange={setCompleted} />
+          <span>{step}</span>
+        </label>
+        {timer && (
+          <span className="text-sm text-muted-foreground">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="lucide lucide-timer inline-block h-4 w-4 mr-1"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            {timer}
+          </span>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -161,6 +193,16 @@ export default function Home() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
+            <Label htmlFor="allergies">Allergies (optional)</Label>
+            <Input
+              type="text"
+              id="allergies"
+              placeholder="e.g., peanuts, gluten, dairy"
+              value={allergies}
+              onChange={e => setAllergies(e.target.value)}
+              className="rounded-md shadow-sm"
+            />
+            <Separator className="my-4" />
             {ingredients.map((ingredient, index) => (
               <div key={index} className="flex flex-col gap-4 border p-4 rounded-md">
                 <div className="flex items-center justify-between">
@@ -183,9 +225,9 @@ export default function Home() {
                       placeholder="e.g., chicken"
                       className="rounded-md shadow-sm"
                     />
-                    {ingredient.image && (
+                    {imageUrls[index] && (
                       <img
-                        src={ingredient.image}
+                        src={imageUrls[index]}
                         alt={ingredient.name}
                         className="mt-2 rounded-md object-cover w-full h-32"
                       />
@@ -201,31 +243,6 @@ export default function Home() {
                       onChange={e => handleQuantityChange(index, e.target.value)}
                       className="rounded-md shadow-sm"
                     />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor={`protein-${index}`}>Protein Level</Label>
-                    <Slider
-                      id={`protein-${index}`}
-                      defaultValue={[ingredient.protein]}
-                      max={100}
-                      step={1}
-                      onValueChange={value => handleProteinChange(index, value[0])}
-                    />
-                    <p className="text-sm text-muted-foreground mt-1">Protein: {ingredient.protein}</p>
-                  </div>
-                  <div>
-                    <Label htmlFor={`fiber-${index}`}>Fiber Level</Label>
-                    <Slider
-                      id={`fiber-${index}`}
-                      defaultValue={[ingredient.fiber]}
-                      max={100}
-                      step={1}
-                      onValueChange={value => handleFiberChange(index, value[0])}
-                    />
-                    <p className="text-sm text-muted-foreground mt-1">Fiber: {ingredient.fiber}</p>
                   </div>
                 </div>
               </div>
@@ -246,6 +263,11 @@ export default function Home() {
             <CardDescription>Here's a recipe based on your ingredients:</CardDescription>
           </CardHeader>
           <CardContent>
+            {recipe.allergyWarning && (
+              <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-md">
+                <strong className="font-bold">Allergy Warning:</strong> {recipe.allergyWarning}
+              </div>
+            )}
             <div className="grid gap-4">
               <div>
                 <h3 className="text-lg font-semibold">Ingredients:</h3>
@@ -259,7 +281,23 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Instructions:</h3>
-                <Textarea readOnly value={recipe.instructions} className="min-h-[100px] rounded-md shadow-sm" />
+                <div>
+                  {recipe.instructions.map((step, index) => (
+                    <RecipeStep key={index} step={step.step} timer={step.timer} />
+                  ))}
+                </div>
+              </div>
+              <Separator className="my-4" />
+              <div>
+                <h3 className="text-lg font-semibold">Alternate Recipes:</h3>
+                <Accordion type="single" collapsible>
+                  {recipe.alternateRecipes.map((altRecipe, index) => (
+                    <AccordionItem key={index} value={`recipe-${index}`}>
+                      <AccordionTrigger>{altRecipe.name}</AccordionTrigger>
+                      <AccordionContent>{altRecipe.description}</AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
               </div>
               <Button onClick={handleAnalyzeNutrients} className="bg-purple-500 hover:bg-purple-700 text-white font-bold rounded-md shadow-md">Analyze Nutrients</Button>
             </div>
@@ -322,69 +360,10 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            {nutrientAnalysis && nutrientAnalysis.recipeAnalysis && (
-              <div className="mt-4">
-                <h3 className="text-xl font-semibold">Nutrient Scale:</h3>
-                <div className="grid gap-2">
-                  <NutrientBar
-                    label="Protein"
-                    value={parseFloat(
-                      nutrientAnalysis.recipeAnalysis.macronutrients.find(
-                        nutrient => nutrient.name === 'Protein'
-                      )?.amount || '0'
-                    )}
-                    unit="g"
-                  />
-                  <NutrientBar
-                    label="Fiber"
-                    value={parseFloat(
-                      nutrientAnalysis.recipeAnalysis.micronutrients.find(
-                        nutrient => nutrient.name === 'Fiber'
-                      )?.amount || '0'
-                    )}
-                    unit="g"
-                  />
-                  <NutrientBar
-                    label="Carbs"
-                    value={parseFloat(
-                      nutrientAnalysis.recipeAnalysis.macronutrients.find(
-                        nutrient => nutrient.name === 'Carbohydrates'
-                      )?.amount || '0'
-                    )}
-                    unit="g"
-                  />
-                  <NutrientBar
-                    label="Fat"
-                    value={parseFloat(
-                      nutrientAnalysis.recipeAnalysis.macronutrients.find(
-                        nutrient => nutrient.name === 'Fat'
-                      )?.amount || '0'
-                    )}
-                    unit="g"
-                  />
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
       <Toaster />
-    </div>
-  );
-}
-
-function NutrientBar({label, value, unit}: {label: string; value: number; unit: string}) {
-  const percentage = Math.min(value, 100); // Cap at 100% for display purposes
-  return (
-    <div className="flex flex-col space-y-1">
-      <div className="flex justify-between">
-        <Label>{label}</Label>
-        <span>
-          {value}
-          {unit}
-        </span>
-      </div>
-      <Progress value={percentage} />
     </div>
   );
 }
