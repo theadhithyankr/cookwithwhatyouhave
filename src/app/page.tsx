@@ -1,4 +1,3 @@
-
 'use client';
 
 import {useState} from 'react';
@@ -9,9 +8,13 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/compo
 import {generateRecipe} from '@/ai/flows/generate-recipe';
 import {analyzeNutrientContent} from '@/ai/flows/analyze-nutrient-content';
 import {Label} from '@/components/ui/label';
+import {Slider} from '@/components/ui/slider';
+import {PlusCircle, MinusCircle} from 'lucide-react';
 
 export default function Home() {
-  const [ingredients, setIngredients] = useState('');
+  const [ingredients, setIngredients] = useState<
+    {name: string; quantity: string; protein: number; fiber: number}[]
+  >([{name: '', quantity: '', protein: 50, fiber: 50}]);
   const [recipe, setRecipe] = useState<{
     recipeName: string;
     ingredients: string[];
@@ -24,10 +27,11 @@ export default function Home() {
   const [ingredientQuantities, setIngredientQuantities] = useState<{[key: string]: string}>({});
 
   const handleGenerateRecipe = async () => {
-    if (!ingredients) return;
+    if (!ingredients.length) return;
 
+    const ingredientNames = ingredients.map(item => item.name).join(',');
     try {
-      const generatedRecipe = await generateRecipe({ingredients});
+      const generatedRecipe = await generateRecipe({ingredients: ingredientNames});
       setRecipe(generatedRecipe);
     } catch (error) {
       console.error('Error generating recipe:', error);
@@ -38,10 +42,13 @@ export default function Home() {
     if (!recipe) return;
 
     // Format ingredients with quantities for nutrient analysis
-    const formattedIngredients = recipe.ingredients.map(ingredient => ({
-      name: ingredient,
-      quantity: ingredientQuantities[ingredient] || '1 serving', // Default quantity
-    }));
+    const formattedIngredients = recipe.ingredients.map(ingredient => {
+      const foundIngredient = ingredients.find(ing => ing.name === ingredient);
+      return {
+        name: ingredient,
+        quantity: foundIngredient?.quantity || '1 serving', // Default quantity
+      };
+    });
 
     try {
       const analysis = await analyzeNutrientContent({
@@ -54,8 +61,40 @@ export default function Home() {
     }
   };
 
-  const handleQuantityChange = (ingredient: string, quantity: string) => {
-    setIngredientQuantities(prev => ({...prev, [ingredient]: quantity}));
+  const handleQuantityChange = (ingredientName: string, quantity: string) => {
+    setIngredients(prevIngredients =>
+      prevIngredients.map(ing =>
+        ing.name === ingredientName ? {...ing, quantity: quantity} : ing
+      )
+    );
+  };
+
+  const handleIngredientNameChange = (index: number, name: string) => {
+    const updatedIngredients = [...ingredients];
+    updatedIngredients[index].name = name;
+    setIngredients(updatedIngredients);
+  };
+
+  const handleProteinChange = (index: number, protein: number) => {
+    const updatedIngredients = [...ingredients];
+    updatedIngredients[index].protein = protein;
+    setIngredients(updatedIngredients);
+  };
+
+  const handleFiberChange = (index: number, fiber: number) => {
+    const updatedIngredients = [...ingredients];
+    updatedIngredients[index].fiber = fiber;
+    setIngredients(updatedIngredients);
+  };
+
+  const addIngredient = () => {
+    setIngredients([...ingredients, {name: '', quantity: '', protein: 50, fiber: 50}]);
+  };
+
+  const removeIngredient = (index: number) => {
+    const updatedIngredients = [...ingredients];
+    updatedIngredients.splice(index, 1);
+    setIngredients(updatedIngredients);
   };
 
   return (
@@ -64,18 +103,60 @@ export default function Home() {
         <CardHeader>
           <CardTitle>Enter Ingredients</CardTitle>
           <CardDescription>
-            Specify the ingredients you have in your fridge (comma-separated).
+            Specify the ingredients you have, along with their nutrient levels.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-2">
-            <Label htmlFor="ingredients">Ingredients</Label>
-            <Input
-              id="ingredients"
-              value={ingredients}
-              onChange={e => setIngredients(e.target.value)}
-              placeholder="e.g., chicken, broccoli, rice"
-            />
+          <div className="grid gap-4">
+            {ingredients.map((ingredient, index) => (
+              <div key={index} className="flex flex-col gap-2 border p-4 rounded-md">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor={`ingredient-name-${index}`}>Ingredient Name</Label>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => removeIngredient(index)}
+                  >
+                    <MinusCircle className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Input
+                  id={`ingredient-name-${index}`}
+                  value={ingredient.name}
+                  onChange={e => handleIngredientNameChange(index, e.target.value)}
+                  placeholder="e.g., chicken"
+                />
+                <Label htmlFor={`ingredient-quantity-${index}`}>Quantity</Label>
+                <Input
+                  type="text"
+                  id={`ingredient-quantity-${index}`}
+                  placeholder="e.g., 100g, 2 cups"
+                  value={ingredient.quantity}
+                  onChange={e => handleQuantityChange(ingredient.name, e.target.value)}
+                />
+                <Label htmlFor={`protein-level-${index}`}>Protein Level</Label>
+                <Slider
+                  id={`protein-level-${index}`}
+                  defaultValue={[ingredient.protein]}
+                  max={100}
+                  step={1}
+                  onValueChange={value => handleProteinChange(index, value[0])}
+                />
+                <Label htmlFor={`fiber-level-${index}`}>Fiber Level</Label>
+                <Slider
+                  id={`fiber-level-${index}`}
+                  defaultValue={[ingredient.fiber]}
+                  max={100}
+                  step={1}
+                  onValueChange={value => handleFiberChange(index, value[0])}
+                />
+              </div>
+            ))}
+            <Button type="button" onClick={addIngredient}>
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Add Ingredient
+            </Button>
             <Button onClick={handleGenerateRecipe}>Generate Recipe</Button>
           </div>
         </CardContent>
