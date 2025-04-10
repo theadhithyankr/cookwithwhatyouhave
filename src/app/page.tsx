@@ -129,28 +129,52 @@ export default function Home() {
 
   const RecipeStep = ({step, timer}: {step: string; timer?: string}) => {
     const [completed, setCompleted] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(timer ? parseInt(timer) : 0);
+        const [hours, setHours] = useState(0);
+    const [minutes, setMinutes] = useState(0);
+    const [seconds, setSeconds] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
 
+        useEffect(() => {
+            if (timer) {
+                const timeParts = timer.split(':');
+                setHours(parseInt(timeParts[0]) || 0);
+                setMinutes(parseInt(timeParts[1]) || 0);
+                setSeconds(parseInt(timeParts[2]) || 0);
+            }
+        }, [timer]);
+
     useEffect(() => {
-      if (isRunning && timeLeft > 0) {
+      let totalSeconds = hours * 3600 + minutes * 60 + seconds;
+
+      if (isRunning && totalSeconds > 0) {
         const intervalId = setInterval(() => {
-          setTimeLeft(timeLeft - 1);
-        }, 60000);
+          if (totalSeconds > 0) {
+            totalSeconds--;
+            setHours(Math.floor(totalSeconds / 3600));
+            setMinutes(Math.floor((totalSeconds % 3600) / 60));
+            setSeconds(totalSeconds % 60);
+          } else {
+            setIsRunning(false);
+          }
+        }, 1000);
         return () => clearInterval(intervalId);
-      } else if (timeLeft === 0) {
+      } else if (totalSeconds === 0) {
         setIsRunning(false);
       }
-    }, [isRunning, timeLeft]);
+    }, [isRunning, hours, minutes, seconds]);
 
     const toggleTimer = () => {
       setIsRunning(!isRunning);
     };
 
     const formatTime = (time: number) => {
-      const minutes = Math.floor(time);
-      return `${minutes}m`;
+      const hours = Math.floor(time / 3600);
+      const minutes = Math.floor((time % 3600) / 60);
+      const seconds = time % 60;
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     };
+
+    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
 
     return (
       <div className="flex items-center justify-between py-2">
@@ -175,7 +199,7 @@ export default function Home() {
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
-            {isRunning ? `Running: ${formatTime(timeLeft)}` : `Set time: ${formatTime(parseInt(timer))}`}
+            {isRunning ? `Running: ${formatTime(totalSeconds)}` : `Set time: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`}
             <Button
               variant="outline"
               size="xs"
@@ -189,6 +213,16 @@ export default function Home() {
       </div>
     );
   };
+
+  const NutrientMeter = ({ nutrient, amount, unit, description }: { nutrient: string; amount: number; unit: string; description: string }) => (
+    <div className="mb-4">
+      <h4 className="text-lg font-semibold">{nutrient}</h4>
+      <Progress value={amount} />
+      <p className="text-sm text-muted-foreground">
+        {amount} {unit} - {description}
+      </p>
+    </div>
+  );
 
   return (
     <div className="container mx-auto p-6 flex flex-col gap-6">
@@ -330,6 +364,34 @@ export default function Home() {
               </p>
             </div>
             <div className="mt-4">
+              <h3 className="text-xl font-semibold">Nutrient Meters:</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {nutrientAnalysis.recipeAnalysis.macronutrients.map((nutrient, index) => (
+                  <NutrientMeter
+                    key={index}
+                    nutrient={nutrient.name}
+                    amount={parseFloat(nutrient.amount)}
+                    unit={nutrient.unit}
+                    description={
+                      nutrient.name === 'Protein' ? 'Essential for muscle building and repair.' :
+                      nutrient.name === 'Fat' ? 'Provides energy and supports cell growth.' :
+                      nutrient.name === 'Carbohydrates' ? 'Main source of energy for the body.' :
+                      'Important for various bodily functions.'
+                    }
+                  />
+                ))}
+                {nutrientAnalysis.recipeAnalysis.micronutrients.map((nutrient, index) => (
+                  <NutrientMeter
+                    key={index}
+                    nutrient={nutrient.name}
+                    amount={parseFloat(nutrient.amount)}
+                    unit={nutrient.unit}
+                    description={'Important for various bodily functions.'}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="mt-4">
               <h3 className="text-xl font-semibold">Macronutrient Ratios:</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
@@ -381,3 +443,4 @@ export default function Home() {
     </div>
   );
 }
+
