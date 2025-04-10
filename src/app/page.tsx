@@ -217,15 +217,32 @@ export default function Home() {
     );
   };
 
-  const NutrientMeter = ({ nutrient, amount, unit, description }: { nutrient: string; amount: number; unit: string; description: string }) => (
-    <div className="mb-4">
-      <h4 className="text-lg font-semibold">{nutrient}</h4>
-      <Progress value={amount} />
-      <p className="text-sm text-muted-foreground">
-        {amount} {unit} - {description}
-      </p>
-    </div>
-  );
+  const NutrientMeter = ({ nutrient, amount, unit, description }: { nutrient: string; amount: number; unit: string; description: string }) => {
+    let color = 'var(--primary)'; // Default color
+    const amountValue = parseFloat(amount);
+
+    // Example thresholds - adjust as needed
+    const highThreshold = 100; // Example: More than 100g is high
+    const lowThreshold = 10;  // Example: Less than 10g is low
+
+    if (amountValue > highThreshold) {
+      color = 'red';
+    } else if (amountValue < lowThreshold) {
+      color = 'orange';
+    } else {
+      color = 'green'; // Balanced
+    }
+
+    return (
+      <div className="mb-4">
+        <h4 className="text-lg font-semibold">{nutrient}</h4>
+        <Progress value={amountValue} style={{ backgroundColor: 'var(--secondary)', '--progress-color': color }} />
+        <p className="text-sm text-muted-foreground">
+          {amount} {unit} - {description}
+        </p>
+      </div>
+    );
+  };
 
   return (
     <div className="container mx-auto p-6 flex flex-col gap-6">
@@ -374,7 +391,7 @@ export default function Home() {
                   <NutrientMeter
                     key={index}
                     nutrient={nutrient.name}
-                    amount={parseFloat(nutrient.amount)}
+                    amount={nutrient.amount}
                     unit={nutrient.unit}
                     description={
                       nutrient.name === 'Protein' ? 'Essential for muscle building and repair.' :
@@ -388,7 +405,7 @@ export default function Home() {
                   <NutrientMeter
                     key={index}
                     nutrient={nutrient.name}
-                    amount={parseFloat(nutrient.amount)}
+                    amount={nutrient.amount}
                     unit={nutrient.unit}
                     description={'Important for various bodily functions.'}
                   />
@@ -429,4 +446,3 @@ export default function Home() {
     </div>
   );
 }
-
