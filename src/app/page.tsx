@@ -13,9 +13,14 @@ import {Toaster} from '@/components/ui/toaster';
 import {useEffect} from 'react';
 import {Checkbox} from '@/components/ui/checkbox';
 import {Separator} from '@/components/ui/separator';
-import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from "@/components/ui/accordion"
-import {useRouter} from 'next/navigation';
 import {Progress} from "@/components/ui/progress"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [ingredients, setIngredients] = useState<
@@ -24,6 +29,7 @@ export default function Home() {
   const [recipe, setRecipe] = useState<GenerateRecipeOutput | null>(null);
   const [nutrientAnalysis, setNutrientAnalysis] = useState<AnalyzeNutrientContentOutput | null>(null);
   const [allergies, setAllergies] = useState('');
+    const [strictMode, setStrictMode] = useState(false); // State for strict mode
   const {toast} = useToast();
   const router = useRouter();
 
@@ -38,7 +44,11 @@ export default function Home() {
 
     const ingredientNames = ingredients.map(item => item.name).join(',');
     try {
-      const generatedRecipe = await generateRecipe({ingredients: ingredientNames, allergies: allergies});
+      const generatedRecipe = await generateRecipe({
+        ingredients: ingredientNames,
+        allergies: allergies,
+        strictMode: strictMode, // Pass strictMode to the generateRecipe function
+      });
       setRecipe(generatedRecipe);
       toast({
         title: 'Recipe generated',
@@ -175,11 +185,6 @@ export default function Home() {
     );
   };
 
-  const handleAlternateRecipeClick = (recipeName: string) => {
-    // Reload the page with the selected recipe
-    router.push(`/?recipe=${recipeName}`);
-  };
-
   return (
     <div className="container mx-auto p-6 flex flex-col gap-6">
       <Card className="shadow-md">
@@ -198,6 +203,14 @@ export default function Home() {
               onChange={e => setAllergies(e.target.value)}
               className="rounded-md shadow-sm"
             />
+                        <div className="flex items-center space-x-2">
+              <Checkbox
+                id="strict-mode"
+                checked={strictMode}
+                onCheckedChange={setStrictMode}
+              />
+              <Label htmlFor="strict-mode">Strict Mode (Only use provided ingredients)</Label>
+            </div>
             <Separator className="my-4" />
             {ingredients.map((ingredient, index) => (
               <div key={index} className="flex flex-col gap-4 border p-4 rounded-md">
@@ -276,19 +289,6 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-              <Separator className="my-4" />
-              <div>
-                <h3 className="text-lg font-semibold">Alternate Recipes:</h3>
-                <Accordion type="single" collapsible>
-                  {recipe.alternateRecipes.map((altRecipe, index) => (
-                    <AccordionItem key={index} value={`recipe-${index}`}>
-                      <AccordionTrigger onClick={() => handleAlternateRecipeClick(altRecipe.name)}>{altRecipe.name}</AccordionTrigger>
-                      <AccordionContent>{altRecipe.description}</AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
-              <Button onClick={handleAnalyzeNutrients} className="bg-purple-500 hover:bg-purple-700 text-white font-bold rounded-md shadow-md">Analyze Nutrients</Button>
             </div>
           </CardContent>
         </Card>
