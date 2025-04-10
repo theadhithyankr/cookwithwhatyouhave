@@ -136,7 +136,7 @@ export default function Home() {
       if (isRunning && timeLeft > 0) {
         const intervalId = setInterval(() => {
           setTimeLeft(timeLeft - 1);
-        }, 1000);
+        }, 60000);
         return () => clearInterval(intervalId);
       } else if (timeLeft === 0) {
         setIsRunning(false);
@@ -145,6 +145,11 @@ export default function Home() {
 
     const toggleTimer = () => {
       setIsRunning(!isRunning);
+    };
+
+    const formatTime = (time: number) => {
+      const minutes = Math.floor(time);
+      return `${minutes}m`;
     };
 
     return (
@@ -170,7 +175,7 @@ export default function Home() {
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
-            {isRunning ? `Running: ${timeLeft}s` : `Set time: ${timer}s`}
+            {isRunning ? `Running: ${formatTime(timeLeft)}` : `Set time: ${formatTime(parseInt(timer))}`}
             <Button
               variant="outline"
               size="xs"
