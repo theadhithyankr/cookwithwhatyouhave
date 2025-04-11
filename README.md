@@ -33,7 +33,7 @@
 
 ## 🛠 Tech Stack
 
-- **Frontend**: HTML, CSS, JavaScript (React / Vanilla – update as per your code)
+- **Frontend**: HTML, CSS, JavaScript (React)
 - **Backend**: Gemini API (for recipe generation and nutritional analysis)
 - **Other Tools**: Timer functions, local state management
 
@@ -45,6 +45,5 @@
 ```bash
 git clone https://github.com/yourusername/cook-with-what-you-have.git
 cd cook-with-what-you-have
-# If using Node/React:
 npm install
 npm start
