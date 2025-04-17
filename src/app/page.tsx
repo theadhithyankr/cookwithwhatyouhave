@@ -140,56 +140,55 @@ export default function Home() {
     setIngredients(updatedIngredients);
   };
 
-  const RecipeStep = ({ step, timer }: { step: string; timer?: string }) => {
+  const RecipeStep = ({step, timer}: {step: string; timer?: string}) => {
     const [completed, setCompleted] = useState(false);
-    const [secondsLeft, setSecondsLeft] = useState(0);
+    const [hours, setHours] = useState(0);
+    const [minutes, setMinutes] = useState(0);
+    const [seconds, setSeconds] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
-  
+
     useEffect(() => {
       if (timer) {
-        const timeParts = timer.split(':').map(Number);
-        const totalSeconds =
-          (timeParts[0] || 0) * 3600 + (timeParts[1] || 0) * 60 + (timeParts[2] || 0);
-        setSecondsLeft(totalSeconds);
+        const timeParts = timer.split(':');
+        setHours(parseInt(timeParts[0]) || 0);
+        setMinutes(parseInt(timeParts[1]) || 0);
+        setSeconds(parseInt(timeParts[2]) || 0);
       }
     }, [timer]);
-  
+
     useEffect(() => {
-      let intervalId: NodeJS.Timeout | null = null;
-  
-      if (isRunning && secondsLeft > 0) {
-        intervalId = setInterval(() => {
-          setSecondsLeft(prev => {
-            if (prev <= 1) {
-              setIsRunning(false);
-              clearInterval(intervalId!);
-              return 0;
-            }
-            return prev - 1;
-          });
+      let totalSeconds = hours * 3600 + minutes * 60 + seconds;
+
+      if (isRunning && totalSeconds > 0) {
+        const intervalId = setInterval(() => {
+          if (totalSeconds > 0) {
+            totalSeconds--;
+            setHours(Math.floor(totalSeconds / 3600));
+            setMinutes(Math.floor((totalSeconds % 3600) / 60));
+            setSeconds(totalSeconds % 60);
+          } else {
+            setIsRunning(false);
+          }
         }, 1000);
+        return () => clearInterval(intervalId);
+      } else if (totalSeconds === 0) {
+        setIsRunning(false);
       }
-  
-      return () => {
-        if (intervalId) clearInterval(intervalId);
-      };
-    }, [isRunning, secondsLeft]);
-  
+    }, [isRunning, hours, minutes, seconds]);
+
     const toggleTimer = () => {
-      if (secondsLeft > 0) {
-        setIsRunning(!isRunning);
-      }
+      setIsRunning(!isRunning);
     };
-  
-    const formatTime = (totalSeconds: number) => {
-      const hours = Math.floor(totalSeconds / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
-      const seconds = totalSeconds % 60;
-      return `${hours.toString().padStart(2, '0')}:${minutes
-        .toString()
-        .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+    const formatTime = (time: number) => {
+      const hours = Math.floor(time / 3600);
+      const minutes = Math.floor((time % 3600) / 60);
+      const seconds = time % 60;
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     };
-  
+
+    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+
     return (
       <div className="flex items-center justify-between py-2">
         <label className="flex items-center space-x-2">
@@ -197,7 +196,7 @@ export default function Home() {
           <span>{step}</span>
         </label>
         {timer && (
-          <span className="text-sm text-muted-foreground flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -208,19 +207,17 @@ export default function Home() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="lucide lucide-timer h-4 w-4"
+              className="lucide lucide-timer inline-block h-4 w-4 mr-1"
             >
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
-            {isRunning
-              ? `Running: ${formatTime(secondsLeft)}`
-              : `Set time: ${formatTime(secondsLeft)}`}
+            {isRunning ? `Running: ${formatTime(totalSeconds)}` : `Set time: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`}
             <Button
               variant="outline"
               size="xs"
               onClick={toggleTimer}
-              disabled={completed || secondsLeft === 0}
+              disabled={completed}
             >
               {isRunning ? 'Pause' : 'Start'}
             </Button>
@@ -228,7 +225,8 @@ export default function Home() {
         )}
       </div>
     );
-  };  
+  };
+
   const NutrientMeter = ({ nutrient, amount, unit, description }: { nutrient: string; amount: number; unit: string; description: string }) => {
     let color = 'var(--primary)'; // Default color
     const amountValue = parseFloat(amount);
